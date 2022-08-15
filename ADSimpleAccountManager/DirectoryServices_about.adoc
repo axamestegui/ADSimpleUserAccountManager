@@ -1,0 +1,21 @@
+= Directory Services
+== Quering Active Directory using CSharp
+* using LDAP
+* using WinNT
+* using IIS (This would be on hold because for the moment the tool would not need to handle IIS or Web related issues.)
+
+
+=== DirectoryEntry Class
+The DirectoryEntry class encapsulates a node or object in the Activ Direcotry Domain Services hierachy.
+
+
+=== Directory Searcher class
+
+== References
+
+=== Quering Active Direcotry using CSharp (C#)
+http://youtube.com/watch?v=9iRs71ovZ_U&t=73s
+
+
+
+
