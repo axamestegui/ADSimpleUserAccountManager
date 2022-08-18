@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ADSimpleAccountManager.View;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,7 +44,7 @@ namespace ADSimpleAccountManager
 
         private void ToolConfigurationsClick(object sender, RoutedEventArgs e)
         {
-
+            MainDisplay.Content = new ConfiigurationPage();
         }
 
         private void CompareUsersClick(object sender, RoutedEventArgs e)

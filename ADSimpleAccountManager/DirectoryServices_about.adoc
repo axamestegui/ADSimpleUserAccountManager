@@ -1,4 +1,19 @@
-= Directory Services
+= Active Directory
+
+Active Directory Domain Services Provide support for locating and working with objects in a network, object such as groups or users. 
+The main prpose of this wizard is to manage simple use cases of searching, creating user and groups within a Domain. 
+Besides that, the possibility of editing defined users properties and groups rights.
+ 
+== Active Directory Directory Services
+
+Using a relational database to store users and group with information like profiles, access rights you can use tables, a User table, a Group Table. In order to make an application to interact with the data in an object oriented way, a object wrapper for Uer has to be implemnented which internally interacts wiht the undelying data (From both tableS).
+
+This way of handling the user object is what directory-services provide you with. Each directory comes wihtits own shcema which allosw you to define new objects types and attribute (property) types. Set the properties o fthe object and then store the object in a dierectory container. It allows yo to bind to an object via the DirectoryEntry type or search your directory via the DirectorySearcher type and then interact wiht these objeccts.
+
+Directories make it very easy to add new object types and attributes through their schema.
+
+There are many directory services available on the market, for example the IBM Tivoli Direcotry Server, the Novell eDirectory or the Microsoft Active Directory. Active Directory is mostly utilized for manging your windows network infrasturcture.
+
 == Quering Active Directory using CSharp
 * using LDAP
 * using WinNT
@@ -16,6 +31,13 @@ The DirectoryEntry class encapsulates a node or object in the Activ Direcotry Do
 === Quering Active Direcotry using CSharp (C#)
 http://youtube.com/watch?v=9iRs71ovZ_U&t=73s
 
+
+=== Serverless Binding and RootDSE
+Servless binding meaning that AD can be bound to on the default domain without specifying the name of a domain controller (typically the domain of the  logged-on user).
+
+Getting the distinguished Name of the Domain that the local computer is a member of by using serverless binding.
+
+If use default Domain Controller is set then use "LDA://RootDSE" otherwise use the name of the server given "LDA://<servername>/RootDSE" (The DNS name of the server).
 
 
 
