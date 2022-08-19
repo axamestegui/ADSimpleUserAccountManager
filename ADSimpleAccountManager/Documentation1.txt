@@ -1,0 +1,312 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.DirectoryServices;
+using System.DirectoryServices.AccountManagement;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using ADWinAuth.ViewModel;
+
+namespace ADWinAuth
+{
+    /// <summary>
+    /// Interaction logic for UsersPage.xaml
+    /// </summary>
+    public partial class UsersPage : Page
+    {
+        private StringCollection userNames = new StringCollection();
+        private SearchableObject searchableObj = new SearchableObject();
+        public UsersPage()
+        {
+            InitializeComponent();
+            this.DataContext = searchableObj;
+
+            InitializeUsers();
+        }
+
+        private void InitializeUsers()
+        {
+            //List of user Sid's. Works like a FASTlabs user database.
+            userNames.Add("S-1-5-21-3672398596-3227583511-885490141-3011874");            
+        }
+
+        private void btnGetAllUsers_Click(object sender, RoutedEventArgs e)
+        {
+            GetAllUsers();
+        }
+
+        private void GetAllUsers()
+        {
+            SearchResultCollection results;
+            DirectorySearcher ds = null;
+            DirectoryEntry de = new DirectoryEntry(GetCurrentDomainPath());
+
+            ds = new DirectorySearcher(de);
+            ds.Filter = "(&(objectCategory=User)(objectClass=person))";
+
+            results = ds.FindAll();
+
+            StringBuilder usersStringBuilder = new StringBuilder("");
+
+            foreach (SearchResult sr in results)
+            {
+                usersStringBuilder.Append(sr.Properties["name"][0].ToString() + "\n");
+            }
+            txtUsersInfo.Text = usersStringBuilder.ToString();
+
+        }
+
+        private string GetCurrentDomainPath()
+        {
+            DirectoryEntry de = new DirectoryEntry("LDAP://RootDSE");
+
+            return "LDAP://" + de.Properties["defaultNamingContext"][0].ToString();
+        }
+
+        private void btnUsersInfo_Click(object sender, RoutedEventArgs e)
+        {
+            GetAdditionalUserInfo();
+        }
+
+        private void GetAdditionalUserInfo()
+        {
+            SearchResultCollection results;
+            DirectorySearcher ds = null;
+            DirectoryEntry de = new DirectoryEntry(GetCurrentDomainPath());
+
+            ds = new DirectorySearcher(de);
+            ds.PropertiesToLoad.Add("name");
+            ds.PropertiesToLoad.Add("mail");
+            ds.PropertiesToLoad.Add("givenname");
+            ds.PropertiesToLoad.Add("sn");
+            ds.PropertiesToLoad.Add("userPrincipalName");
+            ds.PropertiesToLoad.Add("distinguishedName");
+
+            ds.Filter = "(&(objectCategory=User)(objectClass=person))";
+
+            results = ds.FindAll();
+
+            StringBuilder usersAdditionalInfoStringBuilder = new StringBuilder("");
+            foreach (SearchResult sr in results)
+            {
+                if (sr.Properties["name"].Count > 0)
+                    usersAdditionalInfoStringBuilder.Append(sr.Properties["name"][0].ToString() + "\n");
+                if (sr.Properties["mail"].Count > 0)
+                    usersAdditionalInfoStringBuilder.Append(sr.Properties["mail"][0].ToString() + "\n");
+                if (sr.Properties["givenname"].Count > 0)
+                    usersAdditionalInfoStringBuilder.Append(sr.Properties["givenname"][0].ToString() + "\n");
+                if (sr.Properties["sn"].Count > 0)
+                    usersAdditionalInfoStringBuilder.Append(sr.Properties["sn"][0].ToString() + "\n");
+                if (sr.Properties["userPrincipalName"].Count > 0)
+                    usersAdditionalInfoStringBuilder.Append(sr.Properties["userPrincipalName"][0].ToString() + "\n");
+                if (sr.Properties["distinguishedName"].Count > 0)
+                    usersAdditionalInfoStringBuilder.Append(sr.Properties["distinguishedName"][0].ToString() + "\n");
+            }
+            txtUsersInfo.Text = usersAdditionalInfoStringBuilder.ToString();
+        }
+
+        private void btnSearchUsers_Click(object sender, RoutedEventArgs e)
+        {
+            SearchForUsers(searchableObj.Username);            
+        }
+
+        private void SearchForUsers(string userName)
+        {
+            SearchResultCollection results;
+            DirectorySearcher ds = null;
+            DirectoryEntry de = new DirectoryEntry(GetCurrentDomainPath());
+
+            // Build User Searcher
+            ds = BuildUserSearcher(de);
+
+            ds.Filter = "(&(objectCategory=User)(objectClass=person)(name=" + userName + "*))";
+
+            results = ds.FindAll();
+
+            StringBuilder usersSearchResultStringBuilder = new StringBuilder("");
+            foreach (SearchResult sr in results)
+            {
+                // Using the simple aproach below, you can get Null exceptions when dealing with 
+                // property value for a non existen property in the Search result set.
+                // AD responds with a set of only existin properies. It may the case that for
+                // som objects a property is not define on AD. The if solution doesn't work really
+                // using instead first the list of existing properties for each search result object as done at the end.
+             
+                //usersSearchResultStringBuilder.Append(sr.Properties["name"][0].ToString() + "\n");
+                //if (sr.Properties["mail"] != null || sr.Properties["mail"][0] != null)
+                //{
+                //    usersSearchResultStringBuilder.Append(sr.Properties["mail"][0].ToString() + "\n");
+                //}
+                //    else
+                //{
+                //    usersSearchResultStringBuilder.Append("********* #######  **********");
+                //}
+                //usersSearchResultStringBuilder.Append(sr.Properties["givenname"][0].ToString() + "\n");
+                //usersSearchResultStringBuilder.Append(sr.Properties["sn"][0].ToString() + "\n");
+                //usersSearchResultStringBuilder.Append(sr.Properties["userPrincipalName"][0].ToString() + "\n");
+                //usersSearchResultStringBuilder.Append(sr.Properties["distinguishedName"][0].ToString() + "\n");
+                                
+                ResultPropertyCollection myResultPropColl;
+                myResultPropColl = sr.Properties;
+                string V = $"-- Number of properties : ";
+                usersSearchResultStringBuilder.Append(V + sr.Properties.Count.ToString() + "\n");
+                foreach ( string propName in myResultPropColl.PropertyNames)
+                {
+                    usersSearchResultStringBuilder.Append(sr.Properties[propName][0].ToString() + "\n");
+                }
+            }
+            txtUsersInfo.Text = usersSearchResultStringBuilder.ToString();
+
+        }
+        private DirectorySearcher BuildUserSearcher(DirectoryEntry de)
+        {
+            DirectorySearcher ds = null;
+
+            ds = new DirectorySearcher(de);
+            ds.PropertiesToLoad.Add("name");
+            ds.PropertiesToLoad.Add("mail");
+            ds.PropertiesToLoad.Add("givenname");
+            ds.PropertiesToLoad.Add("sn");
+            ds.PropertiesToLoad.Add("userPrincipalName");
+            ds.PropertiesToLoad.Add("distinguishedName");
+
+            return ds;
+        }
+
+        private void btnGetAUser_Click(object sender, RoutedEventArgs e)
+        {
+            txtUsersInfo.Text = "User information using Directory Searcher, name as filter." + Environment.NewLine;
+            txtUsersInfo.Text += "======================================================== " + Environment.NewLine;
+            GetAUser(searchableObj.Username); 
+            txtUsersInfo.Text += "User information using User principal and user account name." + Environment.NewLine;
+            txtUsersInfo.Text += "=========================================================== " + Environment.NewLine;
+            string res = GetAUserByName(searchableObj.Username);
+            if (userNames.Contains(res))
+            {
+                txtUsersInfo.Text += "User is on FASTlab list." + Environment.NewLine;
+                txtUsersInfo.Text += "======================= " + Environment.NewLine;
+            }
+
+            txtUsersInfo.Text += "Users information using User Principal and Sid." + Environment.NewLine;
+            txtUsersInfo.Text += "============================================== " + Environment.NewLine;
+            foreach (string userSid in userNames)
+            {
+                GetAUserBySid(userSid);
+            }
+
+        }
+
+        private void GetAUser(string userName)
+        {
+            DirectorySearcher ds = null;
+            DirectoryEntry de = new DirectoryEntry(GetCurrentDomainPath());
+            SearchResult sr;
+
+            // Build User Searcher
+            ds = BuildUserSearcher(de);
+
+            // The filter in an LDAP query restricts the objects that the search will return
+            // Set the filter to look for a specific user
+            ds.Filter = "(&(objectCategory=person)(objectClass=user)(name=" + userName + "*))";
+
+            sr = ds.FindOne();
+            StringBuilder userSearchResultStringBuilder = new StringBuilder("");
+            if (sr != null)
+            {
+                userSearchResultStringBuilder.Append(sr.Properties["name"][0].ToString() + "\n");
+                userSearchResultStringBuilder.Append(sr.Properties["mail"][0].ToString() + "\n");
+                userSearchResultStringBuilder.Append(sr.Properties["givenname"][0].ToString() + "\n");
+                userSearchResultStringBuilder.Append(sr.Properties["sn"][0].ToString() + "\n");
+                userSearchResultStringBuilder.Append(sr.Properties["userPrincipalName"][0].ToString() + "\n");
+                userSearchResultStringBuilder.Append(sr.Properties["distinguishedName"][0].ToString() + "\n");
+                userSearchResultStringBuilder.Append(sr.Properties["Adspath"][0].ToString() + "\n");
+
+            }
+            txtUsersInfo.Text += userSearchResultStringBuilder.ToString();
+
+        }
+
+        private string GetAUserByName(string userAccountName)
+        {
+            string userSid = "";
+            // Set up domain context
+            PrincipalContext domainContext = new PrincipalContext(ContextType.Domain);
+            // Find user
+            UserPrincipal identifiedUser = UserPrincipal.FindByIdentity(domainContext, IdentityType.SamAccountName, userAccountName);
+
+            StringBuilder userSearchResultStringBuilder = new StringBuilder();
+            if (identifiedUser != null)
+            {
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Name:        ", identifiedUser.Name);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Surname:     ", identifiedUser.Surname);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "UPN:         ", identifiedUser.UserPrincipalName);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Email:       ", identifiedUser.EmailAddress);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Employee id: ", identifiedUser.EmployeeId);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Guid:        ", identifiedUser.Guid);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Sid:         ", identifiedUser.Sid);
+
+                userSid = identifiedUser.Sid.ToString();
+            }
+            txtUsersInfo.Text += userSearchResultStringBuilder.ToString();
+            return userSid;
+        }
+        private void GetAUserBySid(string userSid)
+        {
+            // Set up domain context
+            PrincipalContext domainContext = new PrincipalContext(ContextType.Domain);
+            // Find user
+            UserPrincipal identifiedUser = UserPrincipal.FindByIdentity(domainContext, IdentityType.Sid, userSid);
+
+            StringBuilder userSearchResultStringBuilder = new StringBuilder();
+            if (identifiedUser != null)
+            {
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Name:        ", identifiedUser.Name);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Surname:     ", identifiedUser.Surname);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "UPN:         ", identifiedUser.UserPrincipalName);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Email:       ", identifiedUser.EmailAddress);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Employee id: ", identifiedUser.EmployeeId);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Guid:        ", identifiedUser.Guid);
+                userSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Sid:         ", identifiedUser.Sid);
+
+            }
+            txtUsersInfo.Text += userSearchResultStringBuilder.ToString();
+        }
+
+        private void ReadActiveDirectorySchema()
+        {
+            DirectoryEntry myDirectoryEntry = new DirectoryEntry();
+
+            StringBuilder schemaSearchResultStringBuilder = new StringBuilder();
+
+            // Display the 'SchemaClassName'.
+            schemaSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Schema class name:        ", myDirectoryEntry.SchemaClassName);
+            // Gets the SchemaEntry of the ADS object.
+            DirectoryEntry mySchemaEntry = myDirectoryEntry.SchemaEntry;
+
+            if (string.Compare(mySchemaEntry.Name, "domainDNS") == 0)
+            {
+                foreach (DirectoryEntry myChildDirectoryEntry in myDirectoryEntry.Children)
+                {
+                    schemaSearchResultStringBuilder.AppendFormat("{0} {1} \n", "Child Directory entry path : ", myChildDirectoryEntry.Path);
+                    txtUsersInfo.Text = schemaSearchResultStringBuilder.ToString();
+                }                    
+            }
+        }
+
+        private void btnReadADSchema_Click(object sender, RoutedEventArgs e)
+        {
+            ReadActiveDirectorySchema();
+        }
+    }
+}
